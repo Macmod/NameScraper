@@ -39,6 +39,7 @@ $ python trailscraper.py --domain <DOMAIN>
 - `--sessionfile` - Use a different file to load the session cookie (other than `session.txt`).
 - `--domainsfile` - Look up all domains from a file in the same session instead of providing a single domain.
 - `--timeout` - Default timeout to use in Selenium when looking for elements in the page.
+- `--headless` - Run the webdriver in headless mode.
 
 # Contributing
 

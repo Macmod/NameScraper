@@ -8,8 +8,10 @@ import sys
 
 
 class TrailScraper():
-    def __init__(self, session_cookie, timeout=10):
+    def __init__(self, session_cookie, timeout=10, headless=False):
         options = uc.ChromeOptions() 
+        if headless:
+            options.add_argument('--headless')
 
         self.driver = uc.Chrome(use_subprocess=True, options=options)
         self.driver.get("https://securitytrails.com/")
@@ -116,6 +118,7 @@ if __name__ == '__main__':
     parser.add_argument('--domainsfile', 
                         help='A file with domains to be looked up.')
     parser.add_argument('--domain', help='The domain to look up.')
+    parser.add_argument('--headless', action='store_true', help='Run the webdriver in headless mode.')
     args = parser.parse_args()
 
     domains = []
@@ -125,7 +128,9 @@ if __name__ == '__main__':
     with open(args.sessionfile) as sessionfile:
         session_cookie = sessionfile.read().rstrip()
 
-    ts = TrailScraper(session_cookie, timeout=args.timeout)
+    ts = TrailScraper(session_cookie,
+                      timeout=args.timeout,
+                      headless=args.headless)
 
     lookup_methods = {
         'subdomains': ts.subdomain_sample,
