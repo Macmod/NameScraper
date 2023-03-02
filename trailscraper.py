@@ -25,19 +25,23 @@ class TrailScraper():
         self.wait = WebDriverWait(self.driver, timeout)
 
     def __extract_pagination(self):
-        pagination = self.wait.until(
-            ec.presence_of_element_located(
-                (By.CLASS_NAME, 'pagination-details')
+        try:
+            pagination = self.wait.until(
+                ec.presence_of_element_located(
+                    (By.CLASS_NAME, 'pagination-details')
+                )
             )
-        )
-        pagination_text = pagination.text.replace('\n', ' ').replace('\r', ' ')
-        pagination_numbers = re.search(
-            r'- ([\d,BM+]+) of ([\d,BM+]+) results',
-            pagination_text
-        ).groups()
+            pagination_text = pagination.text.replace('\n', ' ').replace('\r', ' ')
+            pagination_numbers = re.search(
+                r'- ([\d,BM+]+) of ([\d,BM+]+) results',
+                pagination_text
+            ).groups()
 
-        end_of_page = pagination_numbers[0]
-        end_of_results = pagination_numbers[1]
+            end_of_page = pagination_numbers[0]
+            end_of_results = pagination_numbers[1]
+        except Exception:
+            end_of_page = 0
+            end_of_results = 0
 
         return end_of_page, end_of_results
 
@@ -70,9 +74,9 @@ class TrailScraper():
                     )
                 )
                 next_page_btn.click()
-            except:
+            except Exception:
                 print('[~] Could not find next page. Aborting...')
-                continue
+                break
 
         n_domains = len(domains)
         print(f'[+] {n_domains} domains found.')
