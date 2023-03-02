@@ -26,10 +26,14 @@ $ pip install -r requirements.txt
 In order to use TrailScraper you must have a SecurityTrails account, authenticate with it and save your *SecurityTrails* session cookie to a file named `session.txt`. Then run the tool with:
 
 ```bash
-$ python trailscraper.py --lookup <DOMAIN> --output results.txt
+$ python trailscraper.py --lookup <LOOKUP_TYPE> --domain <DOMAIN> --output results.txt
 ```
 
-If an output file is not provided with `--output`, the results are simply going to be printed to the screen.
+If an output file is not provided with `--output`, the results are simply going to be printed to the screen. If you just want to get the subdomains for a domain, you can also omit the lookup type:
+
+```bash
+$ python trailscraper.py --domain <DOMAIN>
+```
 
 ## Optional flags
 - `--sessionfile` - Use a different file to load the session cookie (other than `session.txt`).
