@@ -32,7 +32,7 @@ class TrailScraper():
         )
         pagination_text = pagination.text.replace('\n', ' ').replace('\r', ' ')
         pagination_numbers = re.search(
-            r'- ([\d,+]+) of ([\d,+]+) results',
+            r'- ([\d,BM+]+) of ([\d,BM+]+) results',
             pagination_text
         ).groups()
 
