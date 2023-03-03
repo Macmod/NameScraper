@@ -2,7 +2,7 @@
 
 **TrailScraper** is a Selenium scraper for SecurityTrails public domain search tool. TrailScraper uses the [Undetected Chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver) to go through the result pages one by one and collect the full set of results from the supported lookups automatically.
 
-## Lookups
+## Supported Lookups
 
 This tool can perform and collect the results for the following lookups in SecurityTrails:
 
