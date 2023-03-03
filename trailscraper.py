@@ -8,17 +8,24 @@ import sys
 
 
 class TrailScraper():
+    LOOKUP_MAP = {
+        'subdomains': "https://securitytrails.com/list/apex_domain/%s",
+        'reverse_ns': f"https://securitytrails.com/list/ns/%s",
+        'reverse_cname': f"https://securitytrails.com/list/cname/%s",
+        'reverse_mx': f"https://securitytrails.com/list/mx/%s"
+    }
+
     def __init__(self, session_cookie, timeout=10, headless=False):
         options = uc.ChromeOptions() 
         if headless:
             options.add_argument('--headless')
 
         self.driver = uc.Chrome(use_subprocess=True, options=options)
-        self.driver.get("https://securitytrails.com/")
+        self.driver.get('https://securitytrails.com/')
         self.driver.maximize_window()
         self.driver.add_cookie({
-            "name": "SecurityTrails",
-            "value": session_cookie
+            'name': 'SecurityTrails',
+            'value': session_cookie
         })
 
         self.driver.implicitly_wait(timeout)
@@ -45,7 +52,7 @@ class TrailScraper():
 
         return end_of_page, end_of_results
 
-    def trail_scraper(self, lookup_url, output_file):
+    def __selenium_scraper(self, lookup_url, output_file):
         domains = []
 
         self.driver.get(lookup_url)
@@ -83,25 +90,12 @@ class TrailScraper():
 
         return domains
 
-    def subdomain_sample(self, domain, output_file):
-        lookup_url = f"https://securitytrails.com/list/apex_domain/{domain}"
-        results = self.trail_scraper(lookup_url, output_file)
+    def lookup_sample(self, domain, output_file, lookup_type='subdomains'):
+        lookup_url = TrailScraper.LOOKUP_MAP[lookup_type] % domain
+        results = self.__selenium_scraper(lookup_url, output_file)
+
         return results
 
-    def reverse_ns_sample(self, domain, output_file):
-        lookup_url = f"https://securitytrails.com/list/ns/{domain}"
-        results = self.trail_scraper(lookup_url, output_file)
-        return results
-
-    def reverse_cname_sample(self, domain, output_file):
-        lookup_url = f"https://securitytrails.com/list/cname/{domain}"
-        results = self.trail_scraper(lookup_url, output_file)
-        return results
-
-    def reverse_mx_sample(self, domain, output_file):
-        lookup_url = f"https://securitytrails.com/list/mx/{domain}"
-        results = self.trail_scraper(lookup_url, output_file)
-        return results
 
 if __name__ == '__main__':
     SUPPORTED_LOOKUPS = [
@@ -136,19 +130,6 @@ if __name__ == '__main__':
                       timeout=args.timeout,
                       headless=args.headless)
 
-    lookup_methods = {
-        'subdomains': ts.subdomain_sample,
-        'reverse_ns': ts.reverse_ns_sample,
-        'reverse_cname': ts.reverse_cname_sample,
-        'reverse_mx': ts.reverse_mx_sample
-    }
-
-    if lookup not in lookup_methods:
-        print(f'[+] Invalid lookup "{lookup}".')
-        sys.exit(1)
-
-    lookup_fn = lookup_methods[lookup]
-
     if not args.domainsfile and not args.domain:
         print('[-] You must specify at least one of --domainsfile or --domain to run the tool.')
         sys.exit(1)
@@ -167,7 +148,7 @@ if __name__ == '__main__':
 
     for domain in domains:
         print(f'[+] Looking up domain "{domain}"')
-        lookup_fn(domain, output_file)
+        ts.lookup_sample(domain, output_file, lookup_type=lookup)
 
     if output_file is not None:
         output_file.close()
