@@ -2,13 +2,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 import undetected_chromedriver as uc
+from json import dumps
 import argparse
 import re
 import sys
 
 
 class TrailScraper():
-    LOOKUP_MAP = {
+    DOMAIN_LOOKUP_MAP = {
         'subdomains': "https://securitytrails.com/list/apex_domain/%s",
         'reverse_ns': f"https://securitytrails.com/list/ns/%s",
         'reverse_cname': f"https://securitytrails.com/list/cname/%s",
@@ -52,7 +53,7 @@ class TrailScraper():
 
         return end_of_page, end_of_results
 
-    def __selenium_scraper(self, lookup_url, output_file):
+    def __selenium_scraper_domains(self, lookup_url, output_file):
         domains = []
 
         self.driver.get(lookup_url)
@@ -87,16 +88,99 @@ class TrailScraper():
 
         return domains
 
-    def lookup_sample(self, domain, output_file, lookup_type='subdomains'):
-        lookup_url = TrailScraper.LOOKUP_MAP[lookup_type] % domain
-        results = self.__selenium_scraper(lookup_url, output_file)
+    def __selenium_scraper_dns(self, domain, output_file):
+        results = {}
+
+        self.driver.get(f'https://securitytrails.com/domain/{domain}/dns')
+
+        grid_divs = self.driver.find_elements(
+            By.CSS_SELECTOR, "#app-content>.grid>div"
+        )
+
+        for grid_div in grid_divs:
+            inner_divs = grid_div.find_elements(By.CSS_SELECTOR, "div")
+            info_type = inner_divs[0].text
+
+            if info_type.endswith('records'):
+                records_els = inner_divs[1].find_elements(By.CSS_SELECTOR, 'a.link')
+                records = [r.text for r in records_els]
+
+                normalized_info_type = info_type.replace(' records', '')
+
+                results[normalized_info_type] = records
+            elif info_type == 'TXT':
+                records_els = inner_divs[1].find_elements(By.CSS_SELECTOR, "span")
+                records = [r.text for r in records_els]
+                results['TXT'] = records
+            else:
+                continue
+
+        if output_file is not None:
+            output_file.write(dumps(results) + '\n')
+        else:
+            print(dumps(results))
+
+        return results
+
+    def __selenium_scraper_historical_dns(self, domain, output_file):
+        results = []
+        record_types = ['a', 'aaaa', 'mx', 'ns', 'soa', 'txt']
+
+        for record_type in record_types:
+            subresults = []
+
+            self.driver.get(f'https://securitytrails.com/domain/{domain}/history/{record_type}')
+
+            table = self.wait.until(
+                ec.presence_of_element_located(
+                    (By.CLASS_NAME, 'ui-table')
+                )
+            )
+            keys_els = table.find_elements(By.CSS_SELECTOR, 'thead th')
+            keys = [k.text for k in keys_els]
+
+            rows_els = table.find_elements(By.CSS_SELECTOR, 'tbody tr')
+            for row_el in rows_els:
+                cols_els = row_el.find_elements(By.CSS_SELECTOR, 'td')
+
+                cols = {}
+                for x in range(len(keys)):
+                    col_value = cols_els[x].text
+                    if '\n' in col_value:
+                        col_value = col_value.split('\n')
+                    cols[keys[x]] = col_value
+
+                subresults.append(cols)
+
+            result_obj = {'type': record_type, 'results': subresults}
+            if output_file is not None:
+                output_file.write(dumps(result_obj) + '\n')
+            else:
+                print(dumps(result_obj))
+            results.append(result_obj)
+
+        return results
+
+    def lookup(self, domain, output_file, lookup_type='subdomains'):
+        if lookup_type == 'dns':
+            results = self.__selenium_scraper_dns(domain, output_file)
+        elif lookup_type == 'historical_dns':
+            results = self.__selenium_scraper_historical_dns(domain, output_file)
+        else:
+            lookup_url = TrailScraper.DOMAIN_LOOKUP_MAP[lookup_type] % domain
+            results = self.__selenium_scraper_domains(lookup_url, output_file)
 
         return results
 
 
 if __name__ == '__main__':
     SUPPORTED_LOOKUPS = [
-        'subdomains', 'reverse_ns', 'reverse_cname', 'reverse_mx'
+        'subdomains',
+        'reverse_ns',
+        'reverse_cname',
+        'reverse_mx',
+        'dns',
+        'historical_dns'
     ]
 
     parser = argparse.ArgumentParser(
@@ -145,9 +229,9 @@ if __name__ == '__main__':
 
     for domain in domains:
         print(f'[+] Looking up domain "{domain}"')
-        domains = ts.lookup_sample(domain, output_file, lookup_type=lookup)
+        domains = ts.lookup(domain, output_file, lookup_type=lookup)
         n_domains = len(domains)
-        print(f'[+] {n_domains} domains found.')
+        print(f'[+] {n_domains} results found.')
 
     if output_file is not None:
         output_file.close()

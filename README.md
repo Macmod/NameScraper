@@ -6,6 +6,8 @@
 
 This tool can perform and collect the results for the following lookups in SecurityTrails:
 
+* DNS
+* Historical DNS
 * Subdomains
 * Reverse CNAME
 * Reverse NS
@@ -47,10 +49,8 @@ Contributions are welcome by [opening an issue](https://github.com/Macmod/TrailS
 
 # Todo
 
-* Support for basic DNS record scraping (AAAA, MX, CNAME and TXT records)
-* Support for historical DNS search
+* Improve stability of simple DNS lookups (sometimes it works, sometimes it doesn't...)
 * Support for explicit credentials and automatic reauthentication when the session expires
-* Only write results to stdout when --output is missing
 * Improve project structure and instructions.
 
 # License
