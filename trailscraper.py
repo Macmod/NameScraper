@@ -85,9 +85,6 @@ class TrailScraper():
                 print('[~] Could not find next page. Aborting...')
                 break
 
-        n_domains = len(domains)
-        print(f'[+] {n_domains} domains found.')
-
         return domains
 
     def lookup_sample(self, domain, output_file, lookup_type='subdomains'):
@@ -148,7 +145,9 @@ if __name__ == '__main__':
 
     for domain in domains:
         print(f'[+] Looking up domain "{domain}"')
-        ts.lookup_sample(domain, output_file, lookup_type=lookup)
+        domains = ts.lookup_sample(domain, output_file, lookup_type=lookup)
+        n_domains = len(domains)
+        print(f'[+] {n_domains} domains found.')
 
     if output_file is not None:
         output_file.close()
