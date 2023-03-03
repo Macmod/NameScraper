@@ -52,6 +52,7 @@ Contributions are welcome by [opening an issue](https://github.com/Macmod/TrailS
 * Improve stability of simple DNS lookups (sometimes it works, sometimes it doesn't...)
 * Support for explicit credentials and automatic reauthentication when the session expires
 * Improve project structure and instructions.
+* Paginate historical DNS lookups
 
 # License
 The MIT License (MIT)
