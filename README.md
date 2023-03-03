@@ -25,7 +25,7 @@ $ pip install -r requirements.txt
 
 # Usage
 
-In order to use TrailScraper you must have a SecurityTrails account, authenticate with it and save your *SecurityTrails* session cookie to a file named `session.txt`. Then run the tool with:
+In order to use TrailScraper you must have a SecurityTrails account, authenticate with it and save your `SecurityTrails` session cookie to a file named `session.txt`. Then run the tool with:
 
 ```bash
 $ python trailscraper.py --lookup <LOOKUP_TYPE> --domain <DOMAIN> --output results.txt
@@ -51,7 +51,7 @@ Contributions are welcome by [opening an issue](https://github.com/Macmod/TrailS
 
 * Improve stability of simple DNS lookups (sometimes it works, sometimes it doesn't...)
 * Support for explicit credentials and automatic reauthentication when the session expires
-* Improve project structure and instructions.
+* Improve project structure and instructions
 * Paginate historical DNS lookups
 
 # License
