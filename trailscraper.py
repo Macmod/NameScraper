@@ -236,9 +236,7 @@ if __name__ == '__main__':
 
     ts = TrailScraper(driver, driver_wait,
                       session_cookie,
-                      output_file=output_file,
-                      timeout=args.timeout,
-                      headless=args.headless)
+                      output_file=output_file)
 
     if not args.queriesfile and not args.query:
         print('[-] You must specify at least one of --queriesfile or --query to run the tool.')
