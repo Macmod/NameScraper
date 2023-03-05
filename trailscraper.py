@@ -16,7 +16,7 @@ class TrailScraper():
         'reverse_mx': f"https://securitytrails.com/list/mx/%s"
     }
 
-    def __init__(self, session_cookie, timeout=10, headless=False):
+    def __init__(self, session_cookie, output_file=None, timeout=10, headless=False):
         options = uc.ChromeOptions() 
         if headless:
             options.add_argument('--headless')
@@ -31,6 +31,7 @@ class TrailScraper():
 
         self.driver.implicitly_wait(timeout)
         self.wait = WebDriverWait(self.driver, timeout)
+        self.output_file = output_file
 
     def __extract_pagination(self):
         try:
@@ -53,7 +54,7 @@ class TrailScraper():
 
         return end_of_page, end_of_results
 
-    def __selenium_scraper_domains(self, lookup_url, output_file):
+    def __selenium_scraper_domains(self, lookup_url):
         domains = []
 
         self.driver.get(lookup_url)
@@ -66,8 +67,8 @@ class TrailScraper():
             except Exception:
                 pass
 
-            if output_file is not None:
-                output_file.write('\n'.join(page_domains) + '\n')
+            if self.output_file is not None:
+                self.output_file.write('\n'.join(page_domains) + '\n')
             else:
                 print('\n'.join(page_domains))
 
@@ -88,7 +89,7 @@ class TrailScraper():
 
         return domains
 
-    def __selenium_scraper_dns(self, domain, output_file):
+    def __selenium_scraper_dns(self, domain):
         results = {}
 
         self.driver.get(f'https://securitytrails.com/domain/{domain}/dns')
@@ -115,14 +116,14 @@ class TrailScraper():
             else:
                 continue
 
-        if output_file is not None:
-            output_file.write(dumps(results) + '\n')
+        if self.output_file is not None:
+            self.output_file.write(dumps(results) + '\n')
         else:
             print(dumps(results))
 
         return results
 
-    def __selenium_scraper_historical_dns(self, domain, output_file):
+    def __selenium_scraper_historical_dns(self, domain):
         results = []
         record_types = ['a', 'aaaa', 'mx', 'ns', 'soa', 'txt']
 
@@ -153,22 +154,22 @@ class TrailScraper():
                 subresults.append(cols)
 
             result_obj = {'type': record_type, 'results': subresults}
-            if output_file is not None:
-                output_file.write(dumps(result_obj) + '\n')
+            if self.output_file is not None:
+                self.output_file.write(dumps(result_obj) + '\n')
             else:
                 print(dumps(result_obj))
             results.append(result_obj)
 
         return results
 
-    def lookup(self, domain, output_file, lookup_type='subdomains'):
+    def lookup(self, domain, lookup_type='subdomains'):
         if lookup_type == 'dns':
-            results = self.__selenium_scraper_dns(domain, output_file)
+            results = self.__selenium_scraper_dns(domain)
         elif lookup_type == 'historical_dns':
-            results = self.__selenium_scraper_historical_dns(domain, output_file)
+            results = self.__selenium_scraper_historical_dns(domain)
         else:
             lookup_url = TrailScraper.DOMAIN_LOOKUP_MAP[lookup_type] % domain
-            results = self.__selenium_scraper_domains(lookup_url, output_file)
+            results = self.__selenium_scraper_domains(lookup_url)
 
         return results
 
@@ -207,7 +208,14 @@ if __name__ == '__main__':
     with open(args.sessionfile) as sessionfile:
         session_cookie = sessionfile.read().rstrip()
 
+    if output_filepath is not None:
+        output_file = open(output_filepath, 'a+')
+        print(f'[+] Saving results to file "{output_filepath}"')
+    else:
+        output_file = None
+
     ts = TrailScraper(session_cookie,
+                      output_file=output_file,
                       timeout=args.timeout,
                       headless=args.headless)
 
@@ -221,15 +229,9 @@ if __name__ == '__main__':
     else:
         domains = [args.domain]
 
-    if output_filepath is not None:
-        output_file = open(output_filepath, 'a+')
-        print(f'[+] Saving results to file "{output_filepath}"')
-    else:
-        output_file = None
-
     for domain in domains:
         print(f'[+] Looking up domain "{domain}"')
-        domains = ts.lookup(domain, output_file, lookup_type=lookup)
+        domains = ts.lookup(domain, lookup_type=lookup)
         n_domains = len(domains)
         print(f'[+] {n_domains} results found.')
 
