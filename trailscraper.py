@@ -10,14 +10,17 @@ import sys
 
 class TrailScraper():
     DOMAIN_LOOKUP_MAP = {
-        'subdomains': "https://securitytrails.com/list/apex_domain/%s",
-        'reverse_ns': f"https://securitytrails.com/list/ns/%s",
-        'reverse_cname': f"https://securitytrails.com/list/cname/%s",
-        'reverse_mx': f"https://securitytrails.com/list/mx/%s"
+        'subdomains': 'https://securitytrails.com/list/apex_domain/%s',
+        'reverse_ns': 'https://securitytrails.com/list/ns/%s',
+        'reverse_cname': 'https://securitytrails.com/list/cname/%s',
+        'reverse_mx': 'https://securitytrails.com/list/mx/%s'
     }
+    NEXT_BTN_XPATH = './/*[contains(@class, "tooltip")]//li//a[text()="›"]'
+    PAGINATION_REGEX = r'- ([\d,BM+]+) of ([\d,BM+]+) results'
 
-    def __init__(self, session_cookie, output_file=None, timeout=10, headless=False):
-        options = uc.ChromeOptions() 
+    def __init__(self, session_cookie, output_file=None,
+                 timeout=10, headless=False):
+        options = uc.ChromeOptions()
         if headless:
             options.add_argument('--headless')
 
@@ -35,14 +38,15 @@ class TrailScraper():
 
     def __extract_pagination(self):
         try:
-            pagination = self.wait.until(
+            pagination_obj = self.wait.until(
                 ec.presence_of_element_located(
                     (By.CLASS_NAME, 'pagination-details')
                 )
             )
-            pagination_text = pagination.text.replace('\n', ' ').replace('\r', ' ')
+            pagination_text = pagination_obj.text.replace('\n', ' ')
+            pagination_text = pagination_text.replace('\r', ' ')
             pagination_numbers = re.search(
-                r'- ([\d,BM+]+) of ([\d,BM+]+) results',
+                TrailScraper.PAGINATION_REGEX,
                 pagination_text
             ).groups()
 
@@ -79,7 +83,7 @@ class TrailScraper():
             try:
                 next_page_btn = self.wait.until(
                     ec.presence_of_element_located(
-                        (By.XPATH, './/*[contains(@class, "tooltip")]//li//a[text()="›"]')
+                        (By.XPATH, TrailScraper.NEXT_BTN_XPATH)
                     )
                 )
                 next_page_btn.click()
@@ -103,14 +107,19 @@ class TrailScraper():
             info_type = inner_divs[0].text
 
             if info_type.endswith('records'):
-                records_els = inner_divs[1].find_elements(By.CSS_SELECTOR, 'a.link')
+                records_els = inner_divs[1].find_elements(
+                    By.CSS_SELECTOR,
+                    'a.link'
+                )
                 records = [r.text for r in records_els]
 
                 normalized_info_type = info_type.replace(' records', '')
 
                 results[normalized_info_type] = records
             elif info_type == 'TXT':
-                records_els = inner_divs[1].find_elements(By.CSS_SELECTOR, "span")
+                records_els = inner_divs[1].find_elements(
+                    By.CSS_SELECTOR, 'span'
+                )
                 records = [r.text for r in records_els]
                 results['TXT'] = records
             else:
@@ -127,10 +136,12 @@ class TrailScraper():
         results = []
         record_types = ['a', 'aaaa', 'mx', 'ns', 'soa', 'txt']
 
-        for record_type in record_types:
+        for rtype in record_types:
             subresults = []
 
-            self.driver.get(f'https://securitytrails.com/domain/{domain}/history/{record_type}')
+            self.driver.get(
+                f'https://securitytrails.com/domain/{domain}/history/{rtype}'
+            )
 
             table = self.wait.until(
                 ec.presence_of_element_located(
@@ -153,7 +164,7 @@ class TrailScraper():
 
                 subresults.append(cols)
 
-            result_obj = {'type': record_type, 'results': subresults}
+            result_obj = {'type': rtype, 'results': subresults}
             if self.output_file is not None:
                 self.output_file.write(dumps(result_obj) + '\n')
             else:
@@ -195,10 +206,11 @@ if __name__ == '__main__':
     parser.add_argument('--output', help='Output results to a file.')
     parser.add_argument('--sessionfile', default='session.txt',
                         help='A file with your SecurityTrails cookie.')
-    parser.add_argument('--domainsfile', 
+    parser.add_argument('--domainsfile',
                         help='A file with domains to be looked up.')
     parser.add_argument('--domain', help='The domain to look up.')
-    parser.add_argument('--headless', action='store_true', help='Run the webdriver in headless mode.')
+    parser.add_argument('--headless', action='store_true',
+                        help='Run the webdriver in headless mode.')
     args = parser.parse_args()
 
     domains = []
