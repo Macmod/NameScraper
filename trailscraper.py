@@ -98,8 +98,12 @@ class TrailScraper():
 
         self.driver.get(f'https://securitytrails.com/domain/{domain}/dns')
 
-        grid_divs = self.driver.find_elements(
-            By.CSS_SELECTOR, "#app-content>.grid>div"
+        grid_divs = self.wait.until(
+            ec.presence_of_all_elements_located(
+                (
+                    By.CSS_SELECTOR, "#app-content>.grid>div"
+                )
+            )
         )
 
         for grid_div in grid_divs:
@@ -206,9 +210,9 @@ if __name__ == '__main__':
     parser.add_argument('--output', help='Output results to a file.')
     parser.add_argument('--sessionfile', default='session.txt',
                         help='A file with your SecurityTrails cookie.')
-    parser.add_argument('--domainsfile',
-                        help='A file with domains to be looked up.')
-    parser.add_argument('--domain', help='The domain to look up.')
+    parser.add_argument('--queriesfile',
+                        help='A file with queries to be looked up.')
+    parser.add_argument('--query', help='The query to look up.')
     parser.add_argument('--headless', action='store_true',
                         help='Run the webdriver in headless mode.')
     args = parser.parse_args()
@@ -231,21 +235,21 @@ if __name__ == '__main__':
                       timeout=args.timeout,
                       headless=args.headless)
 
-    if not args.domainsfile and not args.domain:
-        print('[-] You must specify at least one of --domainsfile or --domain to run the tool.')
+    if not args.queriesfile and not args.query:
+        print('[-] You must specify at least one of --queriesfile or --query to run the tool.')
         sys.exit(1)
 
-    if args.domainsfile:
-        with open(args.domainsfile) as domains_file:
-            domains = list(map(lambda x: x.rstrip(), domains_file.readlines()))
+    if args.queriesfile:
+        with open(args.queriesfile) as queries_file:
+            queries = list(map(lambda x: x.rstrip(), queries_file.readlines()))
     else:
-        domains = [args.domain]
+        queries = [args.query]
 
-    for domain in domains:
-        print(f'[+] Looking up domain "{domain}"')
-        domains = ts.lookup(domain, lookup_type=lookup)
-        n_domains = len(domains)
-        print(f'[+] {n_domains} results found.')
+    for query in queries:
+        print(f'[+] Looking up "{query}" ({lookup})')
+        results = ts.lookup(query, lookup_type=lookup)
+        n_results = len(results)
+        print(f'[+] {n_results} results found.')
 
     if output_file is not None:
         output_file.close()
