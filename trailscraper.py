@@ -18,13 +18,11 @@ class TrailScraper():
     NEXT_BTN_XPATH = './/*[contains(@class, "tooltip")]//li//a[text()="›"]'
     PAGINATION_REGEX = r'- ([\d,BM+]+) of ([\d,BM+]+) results'
 
-    def __init__(self, session_cookie, output_file=None,
-                 timeout=10, headless=False):
-        options = uc.ChromeOptions()
-        if headless:
-            options.add_argument('--headless')
+    def __init__(self, driver, driver_wait,
+                 session_cookie, output_file=None):
+        self.driver = driver
+        self.wait = driver_wait
 
-        self.driver = uc.Chrome(use_subprocess=True, options=options)
         self.driver.get('https://securitytrails.com/')
         self.driver.maximize_window()
         self.driver.add_cookie({
@@ -32,8 +30,6 @@ class TrailScraper():
             'value': session_cookie
         })
 
-        self.driver.implicitly_wait(timeout)
-        self.wait = WebDriverWait(self.driver, timeout)
         self.output_file = output_file
 
     def __extract_pagination(self):
@@ -230,7 +226,16 @@ if __name__ == '__main__':
     else:
         output_file = None
 
-    ts = TrailScraper(session_cookie,
+    options = uc.ChromeOptions()
+    if args.headless:
+        options.add_argument('--headless')
+
+    driver = uc.Chrome(use_subprocess=True, options=options)
+    driver.implicitly_wait(args.timeout)
+    driver_wait = WebDriverWait(driver, args.timeout)
+
+    ts = TrailScraper(driver, driver_wait,
+                      session_cookie,
                       output_file=output_file,
                       timeout=args.timeout,
                       headless=args.headless)
