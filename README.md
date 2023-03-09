@@ -13,7 +13,7 @@ This tool can perform and collect the results for the following tools & lookups:
 
 ### SecurityTrails
 
-In order to use this module you must have a SecurityTrails account, authenticate with it and save your `SecurityTrails` session cookie to a file named `session.txt`. Then run the tool with the appropriate `--lookup` flag:
+In order to use this module you must have a SecurityTrails account, authenticate with it and save the contents of your `SecurityTrails` session cookie to a file named `session.txt`. Then run the tool with the appropriate `--lookup` flag:
 
 * DNS (`dns`)
 * Historical DNS (`historicaldns`)
@@ -53,7 +53,7 @@ Please note that ViewDNS's output format is not standard - it varies a lot depen
 
 ### WhoisXMLAPI
 
-In order to use this module you must have a WhoisXMLAPI account, authenticate with it and save your `SecurityTrails` session cookie to a file named `session.txt`. Then run the tool with the appropriate `--lookup` flag:
+In order to use this module you must have a WhoisXMLAPI account, authenticate with it and save the contents of your `emailverification_session` session cookie to a file named `session.txt`. Then run the tool with the appropriate `--lookup` flag:
 
 * Subdomains (`subdomains` - **default lookup**)
 * Reverse NS (`reversens`)
