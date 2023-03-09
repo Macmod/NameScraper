@@ -1,27 +1,23 @@
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
-import undetected_chromedriver as uc
 from json import dumps
-import argparse
 import re
-import sys
 
 
-class TrailScraper():
+class SecurityTrailsScraper():
     LOOKUP_MAP = {
         'subdomains': 'https://securitytrails.com/list/apex_domain/%s',
-        'reverse_ns': 'https://securitytrails.com/list/ns/%s',
-        'reverse_cname': 'https://securitytrails.com/list/cname/%s',
-        'reverse_mx': 'https://securitytrails.com/list/mx/%s',
-        'dns': 'https://securitytrails.com/domain/%s/dns',
-        'historical_dns': 'https://securitytrails.com/domain/%s/history/%s'
+        'reversens': 'https://securitytrails.com/list/ns/%s',
+        'reversecname': 'https://securitytrails.com/list/cname/%s',
+        'reversemx': 'https://securitytrails.com/list/mx/%s',
+        'dnsrecord': 'https://securitytrails.com/domain/%s/dns',
+        'historicaldns': 'https://securitytrails.com/domain/%s/history/%s'
     }
     NEXT_BTN_XPATH = './/*[contains(@class, "tooltip")]//li//a[text()="›"]'
-    PAGINATION_REGEX = r'- ([\d,BM+]+) of ([\d,BM+]+) results'
+    PAGINATION_REGEX = r'- ([\d,KBM+]+) of ([\d,KBM+]+) results'
 
     def __init__(self, driver, driver_wait,
-                 session_cookie, output_file=None):
+                 session_cookie='', output_file=None):
         self.driver = driver
         self.wait = driver_wait
 
@@ -44,7 +40,7 @@ class TrailScraper():
             pagination_text = pagination_obj.text.replace('\n', ' ')
             pagination_text = pagination_text.replace('\r', ' ')
             pagination_numbers = re.search(
-                TrailScraper.PAGINATION_REGEX,
+                SecurityTrailsScraper.PAGINATION_REGEX,
                 pagination_text
             ).groups()
 
@@ -56,10 +52,12 @@ class TrailScraper():
 
         return end_of_page, end_of_results
 
-    def __selenium_scraper_domains(self, lookup_url):
+    def __selenium_scraper_domains(self, domain, lookup_type):
         domains = []
 
-        self.driver.get(lookup_url)
+        self.driver.get(
+            SecurityTrailsScraper.LOOKUP_MAP[lookup_type] % domain
+        )
 
         end_of_page, end_of_results = (100, -1)
         while end_of_page != end_of_results:
@@ -81,7 +79,7 @@ class TrailScraper():
             try:
                 next_page_btn = self.wait.until(
                     ec.presence_of_element_located(
-                        (By.XPATH, TrailScraper.NEXT_BTN_XPATH)
+                        (By.XPATH, SecurityTrailsScraper.NEXT_BTN_XPATH)
                     )
                 )
                 next_page_btn.click()
@@ -94,7 +92,9 @@ class TrailScraper():
     def __selenium_scraper_dns(self, domain):
         results = {}
 
-        self.driver.get(TrailScraper.LOOKUP_MAP['dns'] % domain)
+        self.driver.get(
+            SecurityTrailsScraper.LOOKUP_MAP['dnsrecord'] % domain
+        )
 
         grid_divs = self.wait.until(
             ec.presence_of_all_elements_located(
@@ -142,7 +142,7 @@ class TrailScraper():
             subresults = []
 
             self.driver.get(
-                TrailScraper.LOOKUP_MAP['historical_dns'] % (domain, rtype)
+                SecurityTrailsScraper.LOOKUP_MAP['historical_dns'] % (domain, rtype)
             )
 
             table = self.wait.until(
@@ -176,9 +176,9 @@ class TrailScraper():
         return results
 
     def lookup(self, domain, lookup_type='subdomains'):
-        if lookup_type == 'dns':
+        if lookup_type == 'dnsrecord':
             scraper = self.__selenium_scraper_dns
-        elif lookup_type == 'historical_dns':
+        elif lookup_type == 'historicaldns':
             scraper = self.__selenium_scraper_historical_dns
         else:
             def generic_domain_scraper(domain):
@@ -187,76 +187,3 @@ class TrailScraper():
             scraper = generic_domain_scraper
 
         return scraper(domain)
-
-
-if __name__ == '__main__':
-    SUPPORTED_LOOKUPS = [
-        'subdomains',
-        'reverse_ns',
-        'reverse_cname',
-        'reverse_mx',
-        'dns',
-        'historical_dns'
-    ]
-
-    parser = argparse.ArgumentParser(
-        description='TrailScraper is a Selenium scraper for SecurityTrails public domain search supporting lookups for subdomains & reverse NS/CNAME/MX.'
-    )
-    parser.add_argument('--timeout', default=10, type=int,
-                        help='Default timeout to use in Selenium when looking for elements in the page.')
-    parser.add_argument('--lookup', default='subdomains',
-                        choices=SUPPORTED_LOOKUPS,
-                        help='Type of the lookup to be performed.')
-    parser.add_argument('--output', help='Output results to a file.')
-    parser.add_argument('--sessionfile', default='session.txt',
-                        help='A file with your SecurityTrails cookie.')
-    parser.add_argument('--queriesfile',
-                        help='A file with queries to be looked up.')
-    parser.add_argument('--query', help='The query to look up.')
-    parser.add_argument('--headless', action='store_true',
-                        help='Run the webdriver in headless mode.')
-    args = parser.parse_args()
-
-    domains = []
-    lookup = args.lookup
-    output_filepath = args.output
-
-    with open(args.sessionfile) as sessionfile:
-        session_cookie = sessionfile.read().rstrip()
-
-    if output_filepath is not None:
-        output_file = open(output_filepath, 'a+')
-        print(f'[+] Saving results to file "{output_filepath}"')
-    else:
-        output_file = None
-
-    options = uc.ChromeOptions()
-    if args.headless:
-        options.add_argument('--headless')
-
-    driver = uc.Chrome(use_subprocess=True, options=options)
-    driver.implicitly_wait(args.timeout)
-    driver_wait = WebDriverWait(driver, args.timeout)
-
-    ts = TrailScraper(driver, driver_wait,
-                      session_cookie,
-                      output_file=output_file)
-
-    if not args.queriesfile and not args.query:
-        print('[-] You must specify at least one of --queriesfile or --query to run the tool.')
-        sys.exit(1)
-
-    if args.queriesfile:
-        with open(args.queriesfile) as queries_file:
-            queries = list(map(lambda x: x.rstrip(), queries_file.readlines()))
-    else:
-        queries = [args.query]
-
-    for query in queries:
-        print(f'[+] Looking up "{query}" ({lookup})')
-        results = ts.lookup(query, lookup_type=lookup)
-        n_results = len(results)
-        print(f'[+] {n_results} results found.')
-
-    if output_file is not None:
-        output_file.close()

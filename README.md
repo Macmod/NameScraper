@@ -1,17 +1,76 @@
-# TrailScraper
+# NameScraper 
 
-**TrailScraper** is a Selenium scraper for SecurityTrails public domain search tool. TrailScraper uses the [Undetected Chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver) to go through the result pages one by one and collect the full set of results from the supported lookups automatically.
+**NameScraper** is a Selenium scraper for public domain search tools. NameScraper uses the [Undetected Chromedriver](https://github.com/ultrafunkamsterdam/undetected-chromedriver) to perform queries in various platforms and collect the results.
+
+## Disclaimer
+
+This tool was developed for personal research purposes. I am not responsible for whatever actions are performed with this tool and I will not be maintaining it extensively or improving it to bypass captchas or other complex rate-limiting controls that these third-party tools may implement in the future.
+
 
 ## Supported Lookups
 
-This tool can perform and collect the results for the following lookups in SecurityTrails:
+This tool can perform and collect the results for the following tools & lookups:
 
-* DNS
-* Historical DNS
-* Subdomains
-* Reverse CNAME
-* Reverse NS
-* Reverse MX
+### SecurityTrails
+
+In order to use this module you must have a SecurityTrails account, authenticate with it and save your `SecurityTrails` session cookie to a file named `session.txt`. Then run the tool with the appropriate `--lookup` flag:
+
+* DNS (`dns`)
+* Historical DNS (`historicaldns`)
+* Subdomains (`subdomains` - **default lookup**)
+* Reverse CNAME (`reversecname`)
+* Reverse NS (`reversens`)
+* Reverse MX (`reversemx`)
+
+### ViewDNS
+
+* ASN Lookup (`asnlookup`)
+* Abuse Lookup (`abuselookup`)
+* Chinese Firewall Test (`chinesefirewall`)
+* DNS Record (`dnsrecord` - **default lookup**)
+* DNS Report (`dnsreport`)
+* DNSSEC (`dnssec`)
+* Free Email (`freeemail`)
+* HTTP Headers (`httpheaders`)
+* IP History (`iphistory`)
+* IP Location (`iplocation`)
+* Iran Firewall Test (`iranfirewall`)
+* Is my site down (`ismysitedown`)
+* MAC Lookup (`maclookup`)
+* Ping (`ping`)
+* Portscan (`portscan`)
+* Propagation (`propagation`)
+* Reverse DNS (`reversedns`)
+* Reverse IP (`reverseip`)
+* Reverse MX (`reversemx`)
+* Reverse NS (`reversens`)
+* Reverse Whois (`reversewhois`)
+* Spam DB lookup (`spamdblookup`)
+* Traceroute (`traceroute`)
+* Whois (`whois`)
+
+Please note that ViewDNS's output format is not standard - it varies a lot depending on the type of the lookup, so the results are converted to text using the [html2text](https://github.com/Alir3z4/html2text) library. You'll probably have to parse the results somehow after using this tool.
+
+### WhoisXMLAPI
+
+In order to use this module you must have a WhoisXMLAPI account, authenticate with it and save your `SecurityTrails` session cookie to a file named `session.txt`. Then run the tool with the appropriate `--lookup` flag:
+
+* Subdomains (`subdomains` - **default lookup**)
+* Reverse NS (`reversens`)
+* Whois (`whois`)
+* Whois History (`whoishistory`)
+* Reverse Whois (`reversewhois`)
+* DNS Lookup (`dnslookup`)
+* DNS History (`dnshistory`)
+* Reverse MX (`reversemx`)
+* IP Geolocation (`ipgeolocation`)
+* IP Netblocks (`ipnetblocks`)
+* Website Contacts (`websitecontacts`)
+* Website Categorization (`websitecategory`)
+* Domain Availability (`domainavailability`)
+* Email Verification (`emailverification`)
+
+Note that currently this scraper has the limitation of using the `Copy to clipboard` feature of WhoisXMLAPI to copy the results as a JSON object, therefore you must *not use the clipboard for other purposes* while it's running.
 
 # Prerequisites
 
@@ -25,34 +84,37 @@ $ pip install -r requirements.txt
 
 # Usage
 
-In order to use TrailScraper you must have a SecurityTrails account, authenticate with it and save your `SecurityTrails` session cookie to a file named `session.txt`. Then run the tool with:
+Run the tool with:
 
 ```bash
-$ python trailscraper.py --lookup <LOOKUP_TYPE> --query <DOMAIN> --output results.txt
+$ python namescraper.py --query <DOMAIN> --output results.txt <MODULE> --lookup <LOOKUP_TYPE>
 ```
 
-If an output file is not provided with `--output`, the results are simply going to be printed to the screen. If you just want to get the subdomains for a domain, you can also omit the lookup type:
+If an output file is not provided with `--output`, the results are simply going to be printed to the screen. If you just want to use the default lookup for the provider, you can also omit the lookup type:
 
 ```bash
-$ python trailscraper.py --query <DOMAIN>
+$ python namescraper.py --query <DOMAIN> <MODULE>
 ```
 
 ## Optional flags
-- `--sessionfile` - Use a different file to load the session cookie (other than `session.txt`).
-- `--queriesfile` - Look up all domains from a file in the same session instead of providing a single domain.
-- `--timeout` - Default timeout to use in Selenium when looking for elements in the page.
+- `--queriesfile` - Look up all lines from a file in the same session instead of providing a single query.
+- `--timeout` - Default explicit timeout to use in Selenium when looking for elements in the page.
 - `--headless` - Run the webdriver in headless mode.
 
 # Contributing
 
-Contributions are welcome by [opening an issue](https://github.com/Macmod/TrailScraper/issues/new) or by [submitting a pull request](https://github.com/Macmod/TrailScraper/pulls). If you find any bugs please let me know - I don't have many test environments to validate every edge case.
+Contributions are welcome by [opening an issue](https://github.com/Macmod/NameScraper/issues/new) or by [submitting a pull request](https://github.com/Macmod/NameScraper/pulls). If you find any bugs please let me know - I don't have many test environments to validate every edge case.
 
 # Todo
-
-* Improve stability of simple DNS lookups (sometimes it works, sometimes it doesn't...)
-* Support for explicit credentials and automatic reauthentication when the session expires
+* Perform more tests with all supported lookups and features to identify possible bugs
+* Improve scraper logic to increase efficiency and avoid race conditions
 * Improve project structure and instructions
-* Paginate historical DNS lookups
+* Improve error handling
+* Support for explicit authentication credentials with automatic reauthentication when the session expires
+* SecurityTrails - Improve stability of simple DNS lookups (sometimes it works, sometimes it doesn't...)
+* SecurityTrails - Paginate historical DNS lookups
+* WhoisXMLAPI - Use an alternate method of getting results in JSON without relying on the clipboard
+* WhoisXMLAPI - Stop collection if the max limit for public queries is reached
 
 # License
 The MIT License (MIT)
