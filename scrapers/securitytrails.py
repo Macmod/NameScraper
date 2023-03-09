@@ -61,7 +61,12 @@ class SecurityTrailsScraper():
 
         end_of_page, end_of_results = (100, -1)
         while end_of_page != end_of_results:
-            sample = self.driver.find_elements(By.CSS_SELECTOR, "tbody>tr a")
+            sample = self.wait.until(
+                ec.presence_of_all_elements_located(
+                    (By.CSS_SELECTOR, "tbody>tr a")
+                )
+            )
+
             try:
                 page_domains = [el.text for el in sample]
             except Exception:
